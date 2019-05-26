@@ -1,0 +1,88 @@
+package com.grocery;
+
+import com.grocery.NutrientDetail;
+import com.grocery.Element;
+import com.grocery.Ratings;
+import com.grocery.ItemDetails;
+import java.util.List;
+
+rule "Award 2 points when DV greater or equal to 5"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		List( size == 3 ) from collect( NutrientDetail(pctDVValue > 5 && description in ("Biotin","Calcium","Chromium") ) from $item.nutrientDetails )
+		$element : Element( elementName == "Nutrient Density" ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += 2.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award 2 points when DV greater or equal to 10"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		List( size == 2 ) from collect( NutrientDetail(pctDVValue > 10 && description in ("Biotin","Calcium","Chromium") ) from $item.nutrientDetails )
+		$element : Element( elementName == "Nutrient Density" ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += 2.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award 3 points when DV greater or equal to 10"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		List( size == 3 ) from collect( NutrientDetail(pctDVValue > 10 && description in ("Biotin","Calcium","Chromium") ) from $item.nutrientDetails )
+		$element : Element( elementName == "Nutrient Density" ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += 3.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "EPA and DHA points"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		$totalQty: Double( compareTo(12.5) > 0 ) from accumulate( NutrientDetail($qty : qty, uom == "mg", description in ("EPA", "DHA") ) from $item.nutrientDetails, sum($qty) )
+		List(size >= 2) from collect( String( this in ("Wheat", "Wheat oat", "Wheat berries") ) from $item.ingredientTxt.split(", ") )
+		$element : Element( elementName == "Nutrient Density" ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += 2.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award -1 points when KCAL is greater than 5"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		List(size == 1) from collect( String( this in ("Agave", "Sweetener", "Cane Sugar") ) from $item.ingredientTxt.split(", ") )
+		$detail: NutrientDetail( description == "Calories" ) from $item.nutrientDetails 
+		$element: Element( elementName == "Added Sugars" && 4*qty*100/$detail.qty > 5 ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += -1.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award -2 points when KCAL is greater than 10"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		List(size == 1) from collect( String( this in ("Agave", "Sweetener", "Cane Sugar") ) from $item.ingredientTxt.split(", ") )
+		$detail: NutrientDetail( description == "Calories" ) from $item.nutrientDetails 
+		$element: Element( elementName == "Added Sugars" && 4*qty*100/$detail.qty > 10.0 ) from $item.starRatings.pointsBreakup
+	then
+		modify($item); $element.points += -2.0; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award 2 stars"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		$totalPoints: Double( compareTo(5.0) >= 0 ) from accumulate( Element($points : points) from $item.starRatings.pointsBreakup, sum($points) )
+	then
+		$item.starRatings.starRating += 2; System.out.println("fired rule: "+drools.getRule().getName());
+end
+
+rule "Award 3 stars"
+	dialect "mvel"
+	when
+		$item : ItemDetails()
+		$totalPoints: Double( compareTo(10.0) >= 0 ) from accumulate( Element($points : points) from $item.starRatings.pointsBreakup, sum($points) )
+	then
+		$item.starRatings.starRating += 3; System.out.println("fired rule: "+drools.getRule().getName());
+end
