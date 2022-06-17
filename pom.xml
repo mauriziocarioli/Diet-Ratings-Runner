@@ -28,7 +28,7 @@
 execute by running
 mvn -e exec:java -Dexec.mainClass=&quot;com.grocery.Calculate&quot;</description>
 <properties>
-	<version.org.kie>7.18.0.Final</version.org.kie>
+	<version.org.kie>7.60.0.Final</version.org.kie>
 </properties>
         <dependencies>
 	        <dependency>
